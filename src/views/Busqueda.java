@@ -6,15 +6,21 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+
+import com.caveldev.alura.hotel.dao.HuespedDAO;
+import com.caveldev.alura.hotel.dao.ReservaDAO;
+import com.caveldev.alura.hotel.modelo.Huesped;
+import com.caveldev.alura.hotel.modelo.Reserva;
+import com.caveldev.alura.hotel.utils.JPAUtils;
+
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.JButton;
+import javax.persistence.EntityManager;
 import javax.swing.ImageIcon;
 import java.awt.Color;
 import java.awt.SystemColor;
 import javax.swing.JLabel;
 import java.awt.Font;
-import java.awt.event.ActionListener;
 import java.util.List;
 import java.awt.event.ActionEvent;
 import javax.swing.JTabbedPane;
@@ -38,6 +44,9 @@ public class Busqueda extends JFrame {
 	private JLabel labelAtras;
 	private JLabel labelExit;
 	int xMouse, yMouse;
+	boolean reservaTabON = false;
+	boolean huespedTabON= false;
+
 
 	/**
 	 * Launch the application.
@@ -48,6 +57,7 @@ public class Busqueda extends JFrame {
 				try {
 					Busqueda frame = new Busqueda();
 					frame.setVisible(true);
+					
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -88,9 +98,14 @@ public class Busqueda extends JFrame {
 		panel.setFont(new Font("Roboto", Font.PLAIN, 16));
 		panel.setBounds(20, 169, 865, 328);
 		contentPane.add(panel);
+		
 
-		
-		
+
+
+
+
+
+		//TABLA RESERVAS
 		
 		tbReservas = new JTable();
 		tbReservas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -105,6 +120,11 @@ public class Busqueda extends JFrame {
 		panel.addTab("Reservas", new ImageIcon(Busqueda.class.getResource("/imagenes/reservado.png")), scroll_table, null);
 		scroll_table.setVisible(true);
 		
+		
+
+
+
+		//TABLA HUESPEDES
 		
 		tbHuespedes = new JTable();
 		tbHuespedes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -212,13 +232,19 @@ public class Busqueda extends JFrame {
 		separator_1_2.setBounds(539, 159, 193, 2);
 		contentPane.add(separator_1_2);
 		
+
+
+
+		//BOTON BUSCAR
 		JPanel btnbuscar = new JPanel();
 		btnbuscar.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-
+					tableReserva();	
+					tableHuesped();
 			}
 		});
+
 		btnbuscar.setLayout(null);
 		btnbuscar.setBackground(new Color(12, 138, 199));
 		btnbuscar.setBounds(748, 125, 122, 35);
@@ -232,6 +258,13 @@ public class Busqueda extends JFrame {
 		lblBuscar.setForeground(Color.WHITE);
 		lblBuscar.setFont(new Font("Roboto", Font.PLAIN, 18));
 		
+
+
+
+
+
+
+		//BOTON EDITAR
 		JPanel btnEditar = new JPanel();
 		btnEditar.setLayout(null);
 		btnEditar.setBackground(new Color(12, 138, 199));
@@ -246,7 +279,29 @@ public class Busqueda extends JFrame {
 		lblEditar.setBounds(0, 0, 122, 35);
 		btnEditar.add(lblEditar);
 		
+
+
+
+
+
+
+		//BOTON ELIMINAR
 		JPanel btnEliminar = new JPanel();
+		btnEliminar.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int selectedIndex = panel.getSelectedIndex();
+				String selectedTabTitle = panel.getTitleAt(selectedIndex);
+				if (selectedTabTitle.equals("Reservas")) {
+					System.out.println("La pestaña seleccionada es Reservas");
+					removeReservaRow();
+				} else if (selectedTabTitle.equals("Huéspedes")) {
+					System.out.println("La pestaña seleccionada es Huéspedes");
+					removeHuespedRow();
+				}
+
+			}
+		});
 		btnEliminar.setLayout(null);
 		btnEliminar.setBackground(new Color(12, 138, 199));
 		btnEliminar.setBounds(767, 508, 122, 35);
@@ -262,6 +317,14 @@ public class Busqueda extends JFrame {
 		setResizable(false);
 	}
 	
+
+
+
+
+
+
+
+
 //Código que permite mover la ventana por la pantalla según la posición de "x" y "y"
 	 private void headerMousePressed(java.awt.event.MouseEvent evt) {
 	        xMouse = evt.getX();
@@ -273,4 +336,77 @@ public class Busqueda extends JFrame {
 	        int y = evt.getYOnScreen();
 	        this.setLocation(x - xMouse, y - yMouse);
 }
+
+
+
+
+
+
+		//Metodo que muestra los datos de la tabla Huesped
+		private void tableHuesped(){
+
+			System.out.println("Limpiando tabla Huesped");
+			modeloHuesped.setRowCount(0);
+			
+			System.out.println("Mostrando nuevos datos huespedes");
+
+			EntityManager em = JPAUtils.getEntityManager();
+
+			HuespedDAO huespedDAO = new HuespedDAO(em);
+			List<Huesped> huespedes = huespedDAO.viewTableHuesped();
+
+			// Ejemplo: actualizar la vista de la tabla de huéspedes con los resultados de la consulta
+			for (Huesped huesped : huespedes) {
+				Object[] fila = {huesped.getId(), huesped.getNombre(), huesped.getApellido(), huesped.getFechaNacimiento(), huesped.getNacionalidad(), huesped.getTelefono()};
+				modeloHuesped.addRow(fila);
+		}
+	}
+
+
+
+	
+
+
+		//Metodo que muestra los datos de la tabla Reserva
+		private void tableReserva(){
+			System.out.println("Limpiando tabla Reserva");
+			modelo.setRowCount(0);
+
+			System.out.println("Mostrando nuevos datos reservaciones");
+
+			EntityManager em = JPAUtils.getEntityManager();
+			
+			ReservaDAO reservaDAO = new ReservaDAO(em);
+			List<Reserva> reservas = reservaDAO.viewTableReserva();
+
+			for (Reserva reserva : reservas) {
+				Object[] fila = {reserva.getId(), reserva.getFechaEntrada(), reserva.getFechaSalida(), reserva.getValor(), reserva.getFormaPago()};
+				modelo.addRow(fila);
+
+		}
+	}
+	    
+	private void removeReservaRow(){
+		Long idReserva = (Long) tbReservas.getValueAt(tbReservas.getSelectedRow(), 0);
+				EntityManager em = JPAUtils.getEntityManager();
+				ReservaDAO reservaDAO = new ReservaDAO(em);
+				em.getTransaction().begin();
+				reservaDAO.eliminar(idReserva);
+				em.getTransaction().commit();
+				em.close();
+				modelo.removeRow(tbReservas.getSelectedRow());
+	}
+
+	private void removeHuespedRow(){
+		Long idHuesped = (Long) tbHuespedes.getValueAt(tbHuespedes.getSelectedRow(), 0);
+		EntityManager em = JPAUtils.getEntityManager();
+		HuespedDAO huespedDAO = new HuespedDAO(em);
+		em.getTransaction().begin();
+		huespedDAO.eliminar(idHuesped);
+		em.getTransaction().commit();
+		em.close();
+		modeloHuesped.removeRow(tbHuespedes.getSelectedRow());
+	}
+	    
+	    
 }

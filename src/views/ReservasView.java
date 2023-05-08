@@ -10,16 +10,27 @@ import javax.swing.JOptionPane;
 import javax.swing.ImageIcon;
 import java.awt.Color;
 import javax.swing.JTextField;
+
+import com.caveldev.alura.hotel.dao.HuespedDAO;
+import com.caveldev.alura.hotel.dao.ReservaDAO;
+import com.caveldev.alura.hotel.modelo.Reserva;
+import com.caveldev.alura.hotel.utils.JPAUtils;
 import com.toedter.calendar.JDateChooser;
 import java.awt.Font;
 import javax.swing.JComboBox;
+import javax.persistence.EntityManager;
 import javax.swing.DefaultComboBoxModel;
 import java.text.Format;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.Toolkit;
 import java.beans.PropertyChangeListener;
+import java.math.BigDecimal;
 import java.beans.PropertyChangeEvent;
 import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
@@ -37,6 +48,8 @@ public class ReservasView extends JFrame {
 	int xMouse, yMouse;
 	private JLabel labelExit;
 	private JLabel labelAtras;
+	BigDecimal reservationValue = new BigDecimal(0);
+
 
 	/**
 	 * Launch the application.
@@ -101,13 +114,13 @@ public class ReservasView extends JFrame {
 		separator_1_1.setBackground(SystemColor.textHighlight);
 		panel.add(separator_1_1);
 		
-		JLabel lblCheckIn = new JLabel("FECHA DE CHECK IN");
+		JLabel lblCheckIn = new JLabel("FECHA DE ENTRADA");
 		lblCheckIn.setForeground(SystemColor.textInactiveText);
 		lblCheckIn.setBounds(68, 136, 169, 14);
 		lblCheckIn.setFont(new Font("Roboto Black", Font.PLAIN, 18));
 		panel.add(lblCheckIn);
 		
-		JLabel lblCheckOut = new JLabel("FECHA DE CHECK OUT");
+		JLabel lblCheckOut = new JLabel("FECHA DE SALIDA");
 		lblCheckOut.setForeground(SystemColor.textInactiveText);
 		lblCheckOut.setBounds(68, 221, 187, 14);
 		lblCheckOut.setFont(new Font("Roboto Black", Font.PLAIN, 18));
@@ -244,6 +257,11 @@ public class ReservasView extends JFrame {
 		
 		//Campos que guardaremos en la base de datos
 		txtFechaEntrada = new JDateChooser();
+		txtFechaEntrada.addPropertyChangeListener(new PropertyChangeListener() {
+			public void propertyChange(PropertyChangeEvent evt) {
+				generateReservationValue();
+			}
+		});
 		txtFechaEntrada.getCalendarButton().setBackground(SystemColor.textHighlight);
 		txtFechaEntrada.getCalendarButton().setIcon(new ImageIcon(ReservasView.class.getResource("/imagenes/icon-reservas.png")));
 		txtFechaEntrada.getCalendarButton().setFont(new Font("Roboto", Font.PLAIN, 12));
@@ -264,7 +282,8 @@ public class ReservasView extends JFrame {
 		txtFechaSalida.setFont(new Font("Roboto", Font.PLAIN, 18));
 		txtFechaSalida.addPropertyChangeListener(new PropertyChangeListener() {
 			public void propertyChange(PropertyChangeEvent evt) {
-				//Activa el evento, después del usuario seleccionar las fechas se debe calcular el valor de la reserva
+				//Activa el evento, después del usuario seleccionar las fechas se debe calcular el valor de la reserva		
+					generateReservationValue();
 			}
 		});
 		txtFechaSalida.setDateFormatString("yyyy-MM-dd");
@@ -279,6 +298,7 @@ public class ReservasView extends JFrame {
 		txtValor.setBounds(78, 328, 43, 33);
 		txtValor.setEditable(false);
 		txtValor.setFont(new Font("Roboto Black", Font.BOLD, 17));
+		txtValor.setText("0");
 		txtValor.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 		panel.add(txtValor);
 		txtValor.setColumns(10);
@@ -297,8 +317,13 @@ public class ReservasView extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (ReservasView.txtFechaEntrada.getDate() != null && ReservasView.txtFechaSalida.getDate() != null) {		
-					RegistroHuesped registro = new RegistroHuesped();
-					registro.setVisible(true);
+					if(reservationValue.compareTo(BigDecimal.ZERO) < 0){
+						JOptionPane.showMessageDialog(null, "La fecha de salida es menor a tu fecha de entrada");
+					} else{
+						nextReservationForm();
+						RegistroHuesped registro = new RegistroHuesped();
+						registro.setVisible(true);
+					}
 				} else {
 					JOptionPane.showMessageDialog(null, "Debes llenar todos los campos.");
 				}
@@ -309,6 +334,7 @@ public class ReservasView extends JFrame {
 		btnsiguiente.setBounds(238, 493, 122, 35);
 		panel.add(btnsiguiente);
 		btnsiguiente.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+	
 
 
 	}
@@ -324,4 +350,33 @@ public class ReservasView extends JFrame {
 	        int y = evt.getYOnScreen();
 	        this.setLocation(x - xMouse, y - yMouse);
 }
+	    
+	    private void nextReservationForm() {
+	    	EntityManager em = JPAUtils.getEntityManager();
+			ReservaDAO reservaDao = new ReservaDAO(em);
+			
+			em.getTransaction().begin();
+			Reserva reserva = new Reserva(txtFechaEntrada.getDate(), txtFechaSalida.getDate(),reservationValue, txtFormaPago.getSelectedItem().toString());
+			reservaDao.guardar(reserva);
+			em.getTransaction().commit();
+			em.close();
+	    }
+
+
+		//Genera el valor de la las reservaciones
+		private void generateReservationValue(){
+			
+			if (ReservasView.txtFechaEntrada.getDate() != null && ReservasView.txtFechaSalida.getDate() != null) {
+				LocalDate checkInDate = txtFechaEntrada.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+				LocalDate checkOutDate = txtFechaSalida.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+				Period period = Period.between(checkInDate, checkOutDate);
+				reservationValue = new BigDecimal(period.getDays() * 20);
+			
+				txtValor.setText("L " + String.valueOf(reservationValue));
+				System.out.println(reservationValue);
+			}
+		}
+		
+	    
+	    
 }

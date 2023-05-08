@@ -122,6 +122,7 @@ public class Busqueda extends JFrame {
 		
 		
 
+		
 
 
 		//TABLA HUESPEDES
@@ -364,7 +365,7 @@ public class Busqueda extends JFrame {
 
 
 
-	
+
 
 
 		//Metodo que muestra los datos de la tabla Reserva

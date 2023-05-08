@@ -6,8 +6,17 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.JTextField;
 import java.awt.Color;
+
+import com.caveldev.alura.hotel.dao.HuespedDAO;
+import com.caveldev.alura.hotel.dao.ReservaDAO;
+import com.caveldev.alura.hotel.modelo.Huesped;
+import com.caveldev.alura.hotel.modelo.Reserva;
+import com.caveldev.alura.hotel.utils.JPAUtils;
 import com.toedter.calendar.JDateChooser;
 import javax.swing.JComboBox;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -132,6 +141,7 @@ public class RegistroHuesped extends JFrame {
 		txtNombre.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 		contentPane.add(txtNombre);
 		
+		
 		txtApellido = new JTextField();
 		txtApellido.setFont(new Font("Roboto", Font.PLAIN, 16));
 		txtApellido.setBounds(560, 204, 285, 33);
@@ -139,6 +149,7 @@ public class RegistroHuesped extends JFrame {
 		txtApellido.setBackground(Color.WHITE);
 		txtApellido.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 		contentPane.add(txtApellido);
+		
 		
 		txtFechaN = new JDateChooser();
 		txtFechaN.setBounds(560, 278, 285, 36);
@@ -192,6 +203,7 @@ public class RegistroHuesped extends JFrame {
 		txtTelefono.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 		contentPane.add(txtTelefono);
 		
+		
 		JLabel lblTitulo = new JLabel("REGISTRO HUÉSPED");
 		lblTitulo.setBounds(606, 55, 234, 42);
 		lblTitulo.setForeground(new Color(12, 138, 199));
@@ -205,6 +217,7 @@ public class RegistroHuesped extends JFrame {
 		contentPane.add(lblNumeroReserva);
 		
 		txtNreserva = new JTextField();
+		txtNreserva.setEditable(false);
 		txtNreserva.setFont(new Font("Roboto", Font.PLAIN, 16));
 		txtNreserva.setBounds(560, 495, 285, 33);
 		txtNreserva.setColumns(10);
@@ -260,7 +273,26 @@ public class RegistroHuesped extends JFrame {
 		contentPane.add(btnguardar);
 		btnguardar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 		
+		
+		
+		//BOTON GUARDAR
 		JLabel labelGuardar = new JLabel("GUARDAR");
+		labelGuardar.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				
+				if (txtNombre.getText() != null && txtApellido.getText() != null && txtFechaN.getDate() != null && txtNacionalidad.getSelectedItem().toString() != null && txtTelefono.getText() != null ) {		
+					saveReservation();
+				} else {
+					JOptionPane.showMessageDialog(null, "Debes llenar todos los campos.");
+				}
+	
+			}
+		});
+		
+		
+		
+		
 		labelGuardar.setHorizontalAlignment(SwingConstants.CENTER);
 		labelGuardar.setForeground(Color.WHITE);
 		labelGuardar.setFont(new Font("Roboto", Font.PLAIN, 18));
@@ -327,5 +359,19 @@ public class RegistroHuesped extends JFrame {
 	        int y = evt.getYOnScreen();
 	        this.setLocation(x - xMouse, y - yMouse);
 }
+	    
+	    
+	    private void saveReservation() {
+			EntityManager em = JPAUtils.getEntityManager();
+			HuespedDAO huespedDao = new HuespedDAO(em);
+			em.getTransaction().begin();
+			
+			Huesped huesped = new Huesped(txtNombre.getText(), txtApellido.getText(), txtFechaN.getDate(), txtNacionalidad.getSelectedItem().toString(), txtTelefono.getText());
+    		
+			huespedDao.guardar(huesped);
+			
+			em.getTransaction().commit();
+			em.close();
+		}
 											
 }

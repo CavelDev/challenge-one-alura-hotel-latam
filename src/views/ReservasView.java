@@ -16,6 +16,9 @@ import com.caveldev.alura.hotel.dao.ReservaDAO;
 import com.caveldev.alura.hotel.modelo.Reserva;
 import com.caveldev.alura.hotel.utils.JPAUtils;
 import com.toedter.calendar.JDateChooser;
+
+import net.bytebuddy.asm.Advice.This;
+
 import java.awt.Font;
 import javax.swing.JComboBox;
 import javax.persistence.EntityManager;
@@ -48,7 +51,14 @@ public class ReservasView extends JFrame {
 	int xMouse, yMouse;
 	private JLabel labelExit;
 	private JLabel labelAtras;
+	private JPanel btnAtras;
+	private JPanel btnsiguiente;
+	private JLabel lblSiguiente;
 	BigDecimal reservationValue = new BigDecimal(0);
+	private JLabel lblTitulo;
+	String editON = "EDITANDO RESERVACION";
+	private Long idReserva;
+
 
 
 	/**
@@ -132,8 +142,9 @@ public class ReservasView extends JFrame {
 		lblFormaPago.setFont(new Font("Roboto Black", Font.PLAIN, 18));
 		panel.add(lblFormaPago);
 		
-		JLabel lblTitulo = new JLabel("SISTEMA DE RESERVAS");
-		lblTitulo.setBounds(109, 60, 219, 42);
+		lblTitulo = new JLabel("SISTEMA DE RESERVAS");
+		lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTitulo.setBounds(68, 60, 289, 42);
 		lblTitulo.setForeground(new Color(12, 138, 199));
 		lblTitulo.setFont(new Font("Roboto", Font.BOLD, 20));
 		panel.add(lblTitulo);
@@ -172,9 +183,7 @@ public class ReservasView extends JFrame {
 		btnexit.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				MenuPrincipal principal = new MenuPrincipal();
-				principal.setVisible(true);
-				dispose();
+				checkTitle();
 			}
 			@Override
 			public void mouseEntered(MouseEvent e) {
@@ -218,7 +227,7 @@ public class ReservasView extends JFrame {
 		header.setBackground(Color.WHITE);
 		panel.add(header);
 		
-		JPanel btnAtras = new JPanel();
+		btnAtras = new JPanel();
 		btnAtras.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -248,7 +257,7 @@ public class ReservasView extends JFrame {
 		labelAtras.setHorizontalAlignment(SwingConstants.CENTER);
 		labelAtras.setFont(new Font("Roboto", Font.PLAIN, 23));
 		
-		JLabel lblSiguiente = new JLabel("SIGUIENTE");
+		lblSiguiente = new JLabel("SIGUIENTE");
 		lblSiguiente.setHorizontalAlignment(SwingConstants.CENTER);
 		lblSiguiente.setForeground(Color.WHITE);
 		lblSiguiente.setFont(new Font("Roboto", Font.PLAIN, 18));
@@ -312,7 +321,7 @@ public class ReservasView extends JFrame {
 		txtFormaPago.setModel(new DefaultComboBoxModel(new String[] {"Tarjeta de Crédito", "Tarjeta de Débito", "Dinero en efectivo"}));
 		panel.add(txtFormaPago);
 
-		JPanel btnsiguiente = new JPanel();
+		btnsiguiente = new JPanel();
 		btnsiguiente.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -320,9 +329,7 @@ public class ReservasView extends JFrame {
 					if(reservationValue.compareTo(BigDecimal.ZERO) < 0){
 						JOptionPane.showMessageDialog(null, "La fecha de salida es menor a tu fecha de entrada");
 					} else{
-						nextReservationForm();
-						RegistroHuesped registro = new RegistroHuesped();
-						registro.setVisible(true);
+						changeFunctionNextToUpdateButton();
 					}
 				} else {
 					JOptionPane.showMessageDialog(null, "Debes llenar todos los campos.");
@@ -334,6 +341,8 @@ public class ReservasView extends JFrame {
 		btnsiguiente.setBounds(238, 493, 122, 35);
 		panel.add(btnsiguiente);
 		btnsiguiente.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+		btnsiguiente.add(lblSiguiente);
+		
 	
 
 
@@ -376,7 +385,72 @@ public class ReservasView extends JFrame {
 				System.out.println(reservationValue);
 			}
 		}
+
+
+		private void checkTitle(){
+			if(lblTitulo.getText() == editON){
+				dispose();
+			} else {
+				MenuPrincipal principal = new MenuPrincipal();
+				principal.setVisible(true);
+				dispose();
+			}
+		}
 		
-	    
-	    
-}
+		public void changeTitle(){
+			lblTitulo.setText(editON);
+			lblSiguiente.setText("ACTUALIZAR");
+		}
+
+		private void changeFunctionNextToUpdateButton(){
+			if(lblTitulo.getText() == editON){
+				System.out.println(idReserva);
+				
+				EntityManager em = JPAUtils.getEntityManager();
+				ReservaDAO reservaDao = new ReservaDAO(em);
+				
+				em.getTransaction().begin();
+				
+				Reserva reserva = reservaDao.find(idReserva);
+				reserva.setFechaEntrada(txtFechaEntrada.getDate());
+				reserva.setFechaSalida(txtFechaSalida.getDate());
+				reserva.setFormaPago(txtFormaPago.getSelectedItem().toString());
+				reserva.setValor(reservationValue);
+
+				reservaDao.update(reserva);
+				em.getTransaction().commit();
+				em.close();
+				
+				JOptionPane.showMessageDialog(null, "Registro actualizado exitosamente");
+				dispose();
+
+				
+			} else{
+				nextReservationForm();
+				RegistroHuesped registro = new RegistroHuesped();
+				registro.setVisible(true);
+			}
+		}
+
+		public void setTxtFechaEntrada(java.util.Date dateIn) {
+			this.txtFechaEntrada.setDate(dateIn);
+		}
+
+		public void setTxtFechaSalida(java.util.Date dateOut) {
+			this.txtFechaSalida.setDate(dateOut);
+		}
+
+		public void setTxtFormaPago(String metodoPago) {
+			this.txtFormaPago.setSelectedItem(metodoPago);
+		}
+
+		public void setBtnAtrasOnOff(Boolean btnState) {
+			this.btnAtras.setVisible(btnState);
+		}
+
+		public void setIdReserva(Long idReserva) {
+			this.idReserva = idReserva;
+		}
+
+		
+	}

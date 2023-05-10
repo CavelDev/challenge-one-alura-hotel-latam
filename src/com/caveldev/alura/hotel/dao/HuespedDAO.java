@@ -9,6 +9,8 @@ import com.caveldev.alura.hotel.modelo.Huesped;
 import com.caveldev.alura.hotel.modelo.Reserva;
 import com.caveldev.alura.hotel.utils.JPAUtils;
 
+import views.Busqueda;
+
 public class HuespedDAO {
 	
 	//Craendo acceso a esta clase
@@ -37,7 +39,17 @@ public class HuespedDAO {
 			return huespedes;
 		}
 
-		public void eliminar(Long id) {
+		public Huesped update(Huesped huesped) {
+			this.em = JPAUtils.getEntityManager();
+			
+			em.getTransaction().begin();
+			Huesped updatedHuesped = em.merge(huesped);
+			em.getTransaction().commit();
+			em.close();
+			return updatedHuesped;
+		}
+
+		public void removeData(Long id) {
 
 			EntityManager em = JPAUtils.getEntityManager();
 		
@@ -57,5 +69,17 @@ public class HuespedDAO {
 				em.close();
 			}
 	
+		}
+
+
+		public Huesped find(Long id) {
+			EntityManager em = JPAUtils.getEntityManager();
+		
+			try {
+				Huesped huesped = em.find(Huesped.class, id);
+				return huesped;
+			} finally {
+				em.close();
+			}
 		}
 }

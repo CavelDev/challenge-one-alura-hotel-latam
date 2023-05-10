@@ -5,6 +5,8 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
 import com.caveldev.alura.hotel.dao.HuespedDAO;
@@ -17,9 +19,13 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.persistence.EntityManager;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
+
 import java.awt.Color;
 import java.awt.SystemColor;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+
 import java.awt.Font;
 import java.util.List;
 import java.awt.event.ActionEvent;
@@ -31,6 +37,7 @@ import javax.swing.ListSelectionModel;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.sql.Date;
 
 @SuppressWarnings("serial")
 public class Busqueda extends JFrame {
@@ -44,8 +51,7 @@ public class Busqueda extends JFrame {
 	private JLabel labelAtras;
 	private JLabel labelExit;
 	int xMouse, yMouse;
-	boolean reservaTabON = false;
-	boolean huespedTabON= false;
+
 
 
 	/**
@@ -241,8 +247,8 @@ public class Busqueda extends JFrame {
 		btnbuscar.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-					tableReserva();	
-					tableHuesped();
+				tableReserva();	
+				tableHuesped();	
 			}
 		});
 
@@ -274,15 +280,31 @@ public class Busqueda extends JFrame {
 		contentPane.add(btnEditar);
 		
 		JLabel lblEditar = new JLabel("EDITAR");
+		lblEditar.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int selectedIndex = panel.getSelectedIndex();
+				String selectedTabTitle = panel.getTitleAt(selectedIndex);
+				
+				try{
+					if (selectedTabTitle.equals("Reservas")) {
+						System.out.println("La pestaña seleccionada es Reservas");
+						editReservaRow();
+					} else if (selectedTabTitle.equals("Huéspedes")) {
+						System.out.println("La pestaña seleccionada es Huéspedes");
+						editHuespedRow();
+					}
+				} catch (Exception exception) {
+					JOptionPane.showMessageDialog(null, "Primero debes seleccionar un registro y luego presionar el boton EDITAR");
+				}
+			}
+		});
 		lblEditar.setHorizontalAlignment(SwingConstants.CENTER);
 		lblEditar.setForeground(Color.WHITE);
 		lblEditar.setFont(new Font("Roboto", Font.PLAIN, 18));
 		lblEditar.setBounds(0, 0, 122, 35);
 		btnEditar.add(lblEditar);
 		
-
-
-
 
 
 
@@ -327,12 +349,12 @@ public class Busqueda extends JFrame {
 
 
 //Código que permite mover la ventana por la pantalla según la posición de "x" y "y"
-	 private void headerMousePressed(java.awt.event.MouseEvent evt) {
+	private void headerMousePressed(java.awt.event.MouseEvent evt) {
 	        xMouse = evt.getX();
 	        yMouse = evt.getY();
 	    }
 
-	    private void headerMouseDragged(java.awt.event.MouseEvent evt) {
+	private void headerMouseDragged(java.awt.event.MouseEvent evt) {
 	        int x = evt.getXOnScreen();
 	        int y = evt.getYOnScreen();
 	        this.setLocation(x - xMouse, y - yMouse);
@@ -343,8 +365,8 @@ public class Busqueda extends JFrame {
 
 
 
-		//Metodo que muestra los datos de la tabla Huesped
-		private void tableHuesped(){
+	//Metodo que muestra los datos de la tabla Huesped
+	private void tableHuesped(){
 
 			System.out.println("Limpiando tabla Huesped");
 			modeloHuesped.setRowCount(0);
@@ -363,13 +385,8 @@ public class Busqueda extends JFrame {
 		}
 	}
 
-
-
-
-
-
-		//Metodo que muestra los datos de la tabla Reserva
-		private void tableReserva(){
+	//Metodo que muestra los datos de la tabla Reserva
+	private void tableReserva(){
 			System.out.println("Limpiando tabla Reserva");
 			modelo.setRowCount(0);
 
@@ -389,13 +406,13 @@ public class Busqueda extends JFrame {
 	    
 	private void removeReservaRow(){
 		Long idReserva = (Long) tbReservas.getValueAt(tbReservas.getSelectedRow(), 0);
-				EntityManager em = JPAUtils.getEntityManager();
-				ReservaDAO reservaDAO = new ReservaDAO(em);
-				em.getTransaction().begin();
-				reservaDAO.eliminar(idReserva);
-				em.getTransaction().commit();
-				em.close();
-				modelo.removeRow(tbReservas.getSelectedRow());
+			EntityManager em = JPAUtils.getEntityManager();
+			ReservaDAO reservaDAO = new ReservaDAO(em);
+			em.getTransaction().begin();
+			reservaDAO.removeData(idReserva);
+			em.getTransaction().commit();
+			em.close();
+			modelo.removeRow(tbReservas.getSelectedRow());		
 	}
 
 	private void removeHuespedRow(){
@@ -403,11 +420,48 @@ public class Busqueda extends JFrame {
 		EntityManager em = JPAUtils.getEntityManager();
 		HuespedDAO huespedDAO = new HuespedDAO(em);
 		em.getTransaction().begin();
-		huespedDAO.eliminar(idHuesped);
+		huespedDAO.removeData(idHuesped);
 		em.getTransaction().commit();
 		em.close();
 		modeloHuesped.removeRow(tbHuespedes.getSelectedRow());
 	}
-	    
+
+	private void editHuespedRow(){
+		Long idHuesped = (Long) tbHuespedes.getValueAt(tbHuespedes.getSelectedRow(), 0);
+		EntityManager em = JPAUtils.getEntityManager();
+		HuespedDAO huespedDAO = new HuespedDAO(em);
+		Huesped huesped = huespedDAO.find(idHuesped);
+		em.close();
+
+		RegistroHuesped rh = new RegistroHuesped();
+		rh.setVisible(true);
+		rh.setBtnAtrasOnOff(false);
+		rh.changeTitle();
+		rh.setTxtNombre(huesped.getNombre());
+		rh.setTxtApellido(huesped.getApellido());
+		rh.setTxtFechaN(huesped.getFechaNacimiento());
+		rh.setTxtNacionalidad(huesped.getNacionalidad());
+		rh.setTxtTelefono(huesped.getTelefono());
+		rh.setIdHuesped(idHuesped);
+	}
+
+	private void editReservaRow(){
+		Long idReserva = (Long) tbReservas.getValueAt(tbReservas.getSelectedRow(), 0);
+		EntityManager em = JPAUtils.getEntityManager();
+		ReservaDAO reservaDAO = new ReservaDAO(em);
+		Reserva reserva = reservaDAO.find(idReserva);
+		em.close();
+			
+		ReservasView rv = new ReservasView();
+		rv.setVisible(true);
+		rv.setBtnAtrasOnOff(false);
+		rv.changeTitle();
+		rv.setTxtFechaEntrada(reserva.getFechaEntrada());
+		rv.setTxtFechaSalida(reserva.getFechaSalida());
+		rv.setTxtFormaPago(reserva.getFormaPago());
+		rv.setIdReserva(idReserva);
+
+		
+	}
 	    
 }

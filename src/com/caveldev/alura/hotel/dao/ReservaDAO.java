@@ -5,6 +5,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.TypedQuery;
+import javax.swing.JOptionPane;
 
 import com.caveldev.alura.hotel.modelo.Huesped;
 import com.caveldev.alura.hotel.modelo.Reserva;
@@ -23,6 +24,16 @@ public class ReservaDAO {
 	public void guardar(Reserva reserva) {
 		this.em.persist(reserva);
 	}
+
+	public Reserva update(Reserva reserva) {
+		this.em = JPAUtils.getEntityManager();
+		
+    	em.getTransaction().begin();
+    	Reserva updatedReserva = em.merge(reserva);
+    	em.getTransaction().commit();
+    	em.close();
+    	return updatedReserva;
+	}
 	
 	public static List<Reserva> listar() {
 		String jpql = "SELECT r FROM Reserva r";
@@ -36,7 +47,7 @@ public class ReservaDAO {
 		return reservas;
     }
 
-	public void eliminar(Long id) {
+	public void removeData(Long id) {
 
 		EntityManager em = JPAUtils.getEntityManager();
     
@@ -52,6 +63,17 @@ public class ReservaDAO {
 		} catch (Exception e) {
 			em.getTransaction().rollback();
 			throw e;
+		} finally {
+			em.close();
+		}
+	}
+
+	public Reserva find(Long id) {
+		EntityManager em = JPAUtils.getEntityManager();
+	
+		try {
+			Reserva reserva = em.find(Reserva.class, id);
+			return reserva;
 		} finally {
 			em.close();
 		}
